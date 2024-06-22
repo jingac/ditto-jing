@@ -8,6 +8,14 @@
     "testset": "data/wdc/all/test.txt"
   },
   {
+    "name": "transactions_sanctioned",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/transactions-sanctioned/train.txt",
+    "validset": "data/transactions-sanctioned/valid.txt",
+    "testset": "data/transactions-sanctioned/test.txt"
+  },  
+  {
     "name": "wdc_cameras_small",
     "task_type": "classification",
     "vocab": ["0", "1"],
