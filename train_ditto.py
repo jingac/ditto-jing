@@ -13,6 +13,9 @@ from ditto_light.summarize import Summarizer
 from ditto_light.knowledge import *
 from ditto_light.ditto import train
 
+import nltk
+nltk.download('stopwords')
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="Structured/Beer")
