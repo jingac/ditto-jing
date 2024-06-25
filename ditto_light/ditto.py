@@ -75,7 +75,9 @@ def evaluate(model, iterator, threshold=None):
         float: the F1 score
         float (optional): if threshold is not provided, the threshold
             value that gives the optimal F1
+        dict: A dictionary containing F1, precision, and recall scores
     """
+
     all_p = []
     all_y = []
     all_probs = []
@@ -90,19 +92,29 @@ def evaluate(model, iterator, threshold=None):
     if threshold is not None:
         pred = [1 if p > threshold else 0 for p in all_probs]
         f1 = metrics.f1_score(all_y, pred)
-        return f1
+        precision = metrics.precision_score(all_y, pred)
+        recall = metrics.recall_score(all_y, pred)
+        return {'f1': f1, 'precision': precision, 'recall': recall}
+
     else:
         best_th = 0.5
-        f1 = 0.0 # metrics.f1_score(all_y, all_p)
+        best_f1 = 0.0
+        best_precision = 0.0
+        best_recall = 0.0
 
         for th in np.arange(0.0, 1.0, 0.05):
             pred = [1 if p > th else 0 for p in all_probs]
-            new_f1 = metrics.f1_score(all_y, pred)
-            if new_f1 > f1:
-                f1 = new_f1
+            f1 = metrics.f1_score(all_y, pred)
+            precision = metrics.precision_score(all_y, pred)
+            recall = metrics.recall_score(all_y, pred)
+            if f1 > best_f1:
+                best_f1 = f1
                 best_th = th
+                best_precision = precision
+                best_recall = recall
 
-        return f1, best_th
+        return {'f1': best_f1, 'precision': best_precision, 'recall': best_recall, 'threshold': best_th}
+    
 
 
 def train_step(train_iter, model, optimizer, scheduler, hp):
@@ -196,7 +208,9 @@ def train(trainset, validset, testset, run_tag, hp):
     # logging with tensorboardX
     writer = SummaryWriter(log_dir=hp.logdir)
 
-    best_dev_f1 = best_test_f1 = 0.0
+    best_dev_f1 = 0.0
+    best_test_metrics = {}  # Dictionary to store the best test metrics
+   
     for epoch in range(1, hp.n_epochs+1):
         # train
         model.train()
@@ -204,15 +218,17 @@ def train(trainset, validset, testset, run_tag, hp):
 
         # eval
         model.eval()
-        dev_f1, th = evaluate(model, valid_iter)
-        test_f1 = evaluate(model, test_iter, threshold=th)
+        dev_metrics = evaluate(model, valid_iter)
+        test_metrics = evaluate(model, test_iter, threshold=dev_metrics['threshold'])
 
-        if dev_f1 > best_dev_f1:
-            best_dev_f1 = dev_f1
-            best_test_f1 = test_f1
+        if dev_metrics['f1'] > best_dev_f1:
+            best_dev_f1 = dev_metrics['f1']
+            best_test_metrics = test_metrics  # Save best test metrics when dev F1 is at its best
+                 
             if hp.save_model:
                 # create the directory if not exist
                 directory = os.path.join(hp.logdir, hp.task)
+                # directory = os.path.join(hp.logdir, run_tag)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
 
@@ -224,11 +240,28 @@ def train(trainset, validset, testset, run_tag, hp):
                         'epoch': epoch}
                 torch.save(ckpt, ckpt_path)
 
-        print(f"epoch {epoch}: dev_f1={dev_f1}, f1={test_f1}, best_f1={best_test_f1}")
+        print(f"Epoch {epoch}: Dev F1={dev_metrics['f1']}, Test F1={test_metrics['f1']}, " +
+              f"Dev Precision={dev_metrics['precision']}, Test Precision={test_metrics['precision']}, " +
+              f"Dev Recall={dev_metrics['recall']}, Test Recall={test_metrics['recall']}")
 
-        # logging
-        scalars = {'f1': dev_f1,
-                   't_f1': test_f1}
-        writer.add_scalars(run_tag, scalars, epoch)
+        # Log metrics to TensorBoard
+        metrics_to_log = {
+            'Dev F1': dev_metrics['f1'],
+            'Test F1': test_metrics['f1'],
+            'Dev Precision': dev_metrics['precision'],
+            'Test Precision': test_metrics['precision'],
+            'Dev Recall': dev_metrics['recall'],
+            'Test Recall': test_metrics['recall']
+        }
+        for key, value in metrics_to_log.items():
+            writer.add_scalar(f"{run_tag}/{key}", value, epoch)
 
     writer.close()
+
+    # Print final best results
+    print("Best Validation F1: {:.4f}".format(best_dev_f1))
+    print("Corresponding Test Metrics — F1: {:.4f}, Precision: {:.4f}, Recall: {:.4f}".format(
+        best_test_metrics['f1'], best_test_metrics['precision'], best_test_metrics['recall']))
+
+    # return best_test_metrics  # Return the best test results at the end of training
+       
