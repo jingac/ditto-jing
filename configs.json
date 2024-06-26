@@ -8,6 +8,14 @@
     "testset": "data/wdc/all/test.txt"
   },
   {
+    "name": "other_transactions_sanctioned",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/other-sanctioned-transactions/train.txt",
+    "validset": "data/other-sanctioned-transactions/valid.txt",
+    "testset": "data/other-sanctioned-transactions/test.txt"
+  }, 
+  {
     "name": "new_transactions_sanctioned",
     "task_type": "classification",
     "vocab": ["0", "1"],
