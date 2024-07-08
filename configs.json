@@ -8,6 +8,38 @@
     "testset": "data/wdc/all/test.txt"
   },
   {
+    "name": "trans_sanc_all",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-all/train.txt",
+    "validset": "data/trans-sanc-all/valid.txt",
+    "testset": "data/trans-sanc-all/test.txt"
+  },
+  {
+    "name": "trans_sanc_name",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-name/train.txt",
+    "validset": "data/trans-sanc-name/valid.txt",
+    "testset": "data/trans-sanc-name/test.txt"
+  },
+  {
+    "name": "trans_sanc_reference",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-reference/train.txt",
+    "validset": "data/trans-sanc-reference/valid.txt",
+    "testset": "data/trans-sanc-reference/test.txt"
+  },
+  {
+    "name": "trans_sanc_refertest",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-refertest/train.txt",
+    "validset": "data/trans-sanc-refertest/valid.txt",
+    "testset": "data/trans-sanc-refertest/test.txt"
+  },
+  {
     "name": "other_transactions_sanctioned",
     "task_type": "classification",
     "vocab": ["0", "1"],
