@@ -8,6 +8,46 @@
     "testset": "data/wdc/all/test.txt"
   },
   {
+    "name": "trans_sanc_all_small",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-all-small/train.txt",
+    "validset": "data/trans-sanc-all-small/valid.txt",
+    "testset": "data/trans-sanc-all-small/test.txt"
+  },
+  {
+    "name": "trans_sanc_different_small",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-different-small/train.txt",
+    "validset": "data/trans-sanc-different-small/valid.txt",
+    "testset": "data/trans-sanc-different-small/test.txt"
+  },
+  {
+    "name": "trans_sanc_name_small",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-name-small/train.txt",
+    "validset": "data/trans-sanc-name-small/valid.txt",
+    "testset": "data/trans-sanc-name-small/test.txt"
+  },
+  {
+    "name": "trans_sanc_reference_small",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-reference-small/train.txt",
+    "validset": "data/trans-sanc-reference-small/valid.txt",
+    "testset": "data/trans-sanc-reference-small/test.txt"
+  },
+  {
+    "name": "trans_sanc_refertest_small",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/trans-sanc-refertest-small/train.txt",
+    "validset": "data/trans-sanc-refertest-small/valid.txt",
+    "testset": "data/trans-sanc-refertest-small/test.txt"
+  },
+  {
     "name": "trans_sanc_all",
     "task_type": "classification",
     "vocab": ["0", "1"],
