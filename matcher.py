@@ -15,7 +15,7 @@ import traceback
 
 from torch.utils import data
 from tqdm import tqdm
-from apex import amp
+# from apex import amp
 from scipy.special import softmax
 
 from ditto_light.ditto import evaluate, DittoModel
