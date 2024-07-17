@@ -254,7 +254,7 @@ def tune_threshold(config, model, hp):
 
 
 
-def load_model(task, path, lm, use_gpu, fp16=True):
+def load_model(task, path, lm, use_gpu, fp16=False):
     """Load a model for a specific task.
 
     Args:
