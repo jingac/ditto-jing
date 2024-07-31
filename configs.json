@@ -16,6 +16,14 @@
     "testset": "data/trans-sanc-all-small/test.txt"
   },
   {
+    "name": "new_testing_trans_sanc",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "data/new-testing-trans-sanc/train.txt",
+    "validset": "data/new-testing-trans-sanc/valid.txt",
+    "testset": "data/new-testing-trans-sanc/test.txt"
+  },
+  {
     "name": "trans_sanc_different_small",
     "task_type": "classification",
     "vocab": ["0", "1"],
