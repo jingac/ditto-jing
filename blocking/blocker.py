@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 sys.path.append("sentence-transformers")
 
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, models
 
 def encode_all(path, input_fn, model, overwrite=False):
     """Encode a collection of entries and output to a file
@@ -100,7 +100,23 @@ if __name__ == "__main__":
     hp = parser.parse_args()
 
     # load the model
-    model = SentenceTransformer(hp.model_fn)
+    # Check if using a pre-trained model or an untrained model
+    model_names = {'distilbert': 'distilbert-base-uncased',
+                'bert': 'bert-base-uncased',
+                'albert': 'albert-base-v2' }
+
+    if hp.model_fn in model_names:
+        # Use an untrained model
+        print(f"Using untrained model: {model_names[hp.model_fn]}")
+        word_embedding_model = models.Transformer(model_names[hp.model_fn])
+        pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+        model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
+    else:
+        # Use a pre-trained model
+        print(f"Using pre-trained model: {hp.model_fn}")
+        model = SentenceTransformer(hp.model_fn)
+
+    # model = SentenceTransformer(hp.model_fn)
 
     # generate the vectors
     mata = matb = None

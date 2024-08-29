@@ -8,6 +8,14 @@
     "testset": "data/wdc/all/test.txt"
   },
   {
+    "name": "random_order_trans_sanct",
+    "task_type": "classification",
+    "vocab": ["0", "1"],  
+    "trainset": "data/random-order-trans-sanct/train.txt",
+    "validset": "data/random-order-trans-sanct/valid.txt",
+    "testset": "data/random-order-trans-sanct/test.txt"
+  },
+  {
     "name": "trans_sanc_all_small",
     "task_type": "classification",
     "vocab": ["0", "1"],
