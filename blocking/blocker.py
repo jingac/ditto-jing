@@ -16,7 +16,7 @@ def encode_all(path, input_fn, model, overwrite=False):
 
     Args:
         path (str): the input path
-        input_fn (str): the file of the serialzied entries
+        input_fn (str): the file of the serialized entries
         model (SentenceTransformer): the transformer model
         overwrite (boolean, optional): whether to overwrite out_fn
 
@@ -27,17 +27,39 @@ def encode_all(path, input_fn, model, overwrite=False):
     input_fn = os.path.join(path, input_fn)
     output_fn = input_fn + '.mat'
 
+    # Move the model to GPU
+    model.to('cuda')
+
     # read from input_fn
     lines = open(input_fn).read().split('\n')
 
     # encode and dump
     if not os.path.exists(output_fn) or overwrite:
-        vectors = model.encode(lines)
-        vectors = [v / np.linalg.norm(v) for v in vectors]
+        vectors = []
+        for line in lines:
+            # Tokenize with truncation and padding
+            encoded_input = model.tokenize(
+                line,
+                padding='max_length',  # Pad to max length of the model
+                truncation=True,       # Truncate sequences to the max length
+                max_length=512,        # Maximum sequence length for BERT, DistilBERT, ALBERT
+                return_tensors='pt'    # Return PyTorch tensors
+            )
+
+            # Encode the tokenized input
+            with torch.no_grad():
+                model_output = model(encoded_input['input_ids'].to('cuda'),
+                                     attention_mask=encoded_input['attention_mask'].to('cuda'))
+                vector = model_output['sentence_embedding'].cpu().numpy()
+                vectors.append(vector / np.linalg.norm(vector))
+
+        vectors = np.array(vectors)
         pickle.dump(vectors, open(output_fn, 'wb'))
     else:
         vectors = pickle.load(open(output_fn, 'rb'))
+
     return lines, vectors
+
 
 
 def blocked_matmul(mata, matb,
