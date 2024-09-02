@@ -1,8 +1,6 @@
 import torch
-
 from torch.utils import data
 from transformers import AutoTokenizer
-
 from .augment import Augmenter
 
 # map lm name to huggingface's pre-trained model names
@@ -37,9 +35,13 @@ class DittoDataset(data.Dataset):
             lines = open(path)
 
         for line in lines:
-            s1, s2, label = line.strip().split('\t')
-            self.pairs.append((s1, s2))
-            self.labels.append(int(label))
+            try:
+                s1, s2, label = line.strip().split('\t')
+                self.pairs.append((s1, s2))
+                self.labels.append(int(label))
+            except ValueError:
+                # Skip lines that don't have the correct format
+                continue
 
         self.pairs = self.pairs[:size]
         self.labels = self.labels[:size]
@@ -65,27 +67,31 @@ class DittoDataset(data.Dataset):
             List of int: token ID's of the two entities augmented (if da is set)
             int: the label of the pair (0: unmatch, 1: match)
         """
-        left = self.pairs[idx][0]
-        right = self.pairs[idx][1]
+        try:
+            left = self.pairs[idx][0]
+            right = self.pairs[idx][1]
 
-        # left + right
-        x = self.tokenizer.encode(text=left,
-                                  text_pair=right,
-                                  max_length=self.max_len,
-                                  truncation=True)
-
-        # augment if da is set
-        if self.da is not None:
-            combined = self.augmenter.augment_sent(left + ' [SEP] ' + right, self.da)
-            left, right = combined.split(' [SEP] ')
-            x_aug = self.tokenizer.encode(text=left,
+            # left + right
+            x = self.tokenizer.encode(text=left,
                                       text_pair=right,
                                       max_length=self.max_len,
                                       truncation=True)
-            return x, x_aug, self.labels[idx]
-        else:
-            return x, self.labels[idx]
 
+            # augment if da is set
+            if self.da is not None:
+                combined = self.augmenter.augment_sent(left + ' [SEP] ' + right, self.da)
+                left, right = combined.split(' [SEP] ')
+                x_aug = self.tokenizer.encode(text=left,
+                                          text_pair=right,
+                                          max_length=self.max_len,
+                                          truncation=True)
+                return x, x_aug, self.labels[idx]
+            else:
+                return x, self.labels[idx]
+        except Exception as e:
+            # If any error occurs, skip this item
+            print(f"Skipping item {idx} due to error: {e}")
+            return None
 
     @staticmethod
     def pad(batch):
@@ -99,6 +105,9 @@ class DittoDataset(data.Dataset):
                         Elements of x1 and x2 are padded to the same length
             LongTensor: a batch of labels, (batch_size,)
         """
+        # Filter out any None items that were skipped
+        batch = [item for item in batch if item is not None]
+
         if len(batch[0]) == 3:
             x1, x2, y = zip(*batch)
 
@@ -114,4 +123,3 @@ class DittoDataset(data.Dataset):
             x12 = [xi + [0]*(maxlen - len(xi)) for xi in x12]
             return torch.LongTensor(x12), \
                    torch.LongTensor(y)
-
