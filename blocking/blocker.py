@@ -16,7 +16,7 @@ def encode_all(path, input_fn, model, overwrite=False):
 
     Args:
         path (str): the input path
-        input_fn (str): the file of the serialized entries
+        input_fn (str): the file of the serialzied entries
         model (SentenceTransformer): the transformer model
         overwrite (boolean, optional): whether to overwrite out_fn
 
@@ -27,39 +27,17 @@ def encode_all(path, input_fn, model, overwrite=False):
     input_fn = os.path.join(path, input_fn)
     output_fn = input_fn + '.mat'
 
-    # Move the model to GPU
-    model.to('cuda')
-
     # read from input_fn
     lines = open(input_fn).read().split('\n')
 
     # encode and dump
     if not os.path.exists(output_fn) or overwrite:
-        vectors = []
-        for line in lines:
-            # Tokenize with truncation and padding
-            encoded_input = model.tokenize(
-                line,
-                padding='max_length',  # Pad to max length of the model
-                truncation=True,       # Truncate sequences to the max length
-                max_length=512,        # Maximum sequence length for BERT, DistilBERT, ALBERT
-                return_tensors='pt'    # Return PyTorch tensors
-            )
-
-            # Encode the tokenized input
-            with torch.no_grad():
-                model_output = model(encoded_input['input_ids'].to('cuda'),
-                                     attention_mask=encoded_input['attention_mask'].to('cuda'))
-                vector = model_output['sentence_embedding'].cpu().numpy()
-                vectors.append(vector / np.linalg.norm(vector))
-
-        vectors = np.array(vectors)
+        vectors = model.encode(lines)
+        vectors = [v / np.linalg.norm(v) for v in vectors]
         pickle.dump(vectors, open(output_fn, 'wb'))
     else:
         vectors = pickle.load(open(output_fn, 'rb'))
-
     return lines, vectors
-
 
 
 def blocked_matmul(mata, matb,
@@ -107,7 +85,7 @@ def dump_pairs(out_fn, entries_a, entries_b, pairs):
     """
     with jsonlines.open(out_fn, mode='w') as writer:
         for idx_a, idx_b, score in pairs:
-            writer.write([entries_a[idx_a], entries_b[idx_b], str(score)])
+            writer.write([entries_b[idx_b], entries_a[idx_a], str(score)])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -131,7 +109,12 @@ if __name__ == "__main__":
         # Use an untrained model
         print(f"Using untrained model: {model_names[hp.model_fn]}")
         word_embedding_model = models.Transformer(model_names[hp.model_fn])
-        pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+        # pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+        pooling_model = models.Pooling(word_embedding_model\
+                               .get_word_embedding_dimension(),
+                               pooling_mode_mean_tokens=True,
+                               pooling_mode_cls_token=False,
+                               pooling_mode_max_tokens=False)
         model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
     else:
         # Use a pre-trained model
