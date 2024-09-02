@@ -4,6 +4,9 @@ import json
 import sys
 import math
 
+# Disable Weights & Biases
+os.environ["WANDB_DISABLED"] = "true"
+
 sys.path.insert(0, "sentence-transformers")
 
 from sentence_transformers.readers import InputExample
@@ -14,8 +17,7 @@ from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 from torch.utils.data import DataLoader
 
 class Reader:
-    """A simple reader class for the matching datasets.
-    """
+    """A simple reader class for the matching datasets."""
     def __init__(self):
         self.guid = 0
 
@@ -30,8 +32,7 @@ class Reader:
         return examples
 
 def train(hp):
-    """Train the advanced blocking model
-    Store the trained model in hp.model_fn.
+    """Train the advanced blocking model and store the trained model in hp.model_fn.
 
     Args:
         hp (Namespace): the hyperparameters
@@ -39,7 +40,7 @@ def train(hp):
     Returns:
         None
     """
-    # define model
+    # Define model
     model_names = {'distilbert': 'distilbert-base-uncased',
                    'bert': 'bert-base-uncased',
                    'albert': 'albert-base-v2' }
@@ -47,13 +48,13 @@ def train(hp):
     word_embedding_model = models.Transformer(model_names[hp.lm])
     pooling_model = models.Pooling(word_embedding_model\
                                    .get_word_embedding_dimension(),
-				   pooling_mode_mean_tokens=True,
-				   pooling_mode_cls_token=False,
-				   pooling_mode_max_tokens=False)
+                                   pooling_mode_mean_tokens=True,
+                                   pooling_mode_cls_token=False,
+                                   pooling_mode_max_tokens=False)
 
     model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 
-    # load the training and validation data
+    # Load the training and validation data
     reader = Reader()
     trainset = SentencesDataset(examples=reader.get_examples(hp.train_fn),
                                 model=model)
@@ -65,30 +66,34 @@ def train(hp):
                     .get_sentence_embedding_dimension(),
             num_labels=2)
 
-    dev_data = SentencesDataset(examples=reader\
-                                         .get_examples(hp.valid_fn),
-                                model=model)
-    dev_dataloader = DataLoader(dev_data,
-                                shuffle=False,
-                                batch_size=hp.batch_size)
-    evaluator = EmbeddingSimilarityEvaluator(dev_dataloader)
+    # Load validation data
+    dev_data = reader.get_examples(hp.valid_fn)
+    dev_sentences1 = [example.texts[0] for example in dev_data]
+    dev_sentences2 = [example.texts[1] for example in dev_data]
+    dev_scores = [example.label for example in dev_data]
+
+    # Create evaluator
+    evaluator = EmbeddingSimilarityEvaluator(sentences1=dev_sentences1,
+                                             sentences2=dev_sentences2,
+                                             scores=dev_scores)
 
     warmup_steps = math.ceil(len(train_dataloader) \
-            * hp.n_epochs / hp.batch_size * 0.1) #10% of train data for warm-up
+            * hp.n_epochs / hp.batch_size * 0.1) # 10% of train data for warm-up
 
     if os.path.exists(hp.model_fn):
         import shutil
         shutil.rmtree(hp.model_fn)
 
-    # Train the model
-    model.fit(train_objectives=[(train_dataloader, train_loss)],
-          evaluator=evaluator,
-          epochs=hp.n_epochs,
-          evaluation_steps=1000,
-          warmup_steps=warmup_steps,
-          output_path=hp.model_fn,
-          fp16=hp.fp16,
-          fp16_opt_level='O2')
+    # Train the model with manual logging
+    for epoch in range(hp.n_epochs):
+        model.fit(train_objectives=[(train_dataloader, train_loss)],
+                  evaluator=evaluator,
+                  epochs=1,
+                  evaluation_steps=1000,
+                  warmup_steps=warmup_steps,
+                  output_path=hp.model_fn)
+        
+        print(f"Epoch {epoch + 1}/{hp.n_epochs} completed.")
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -99,7 +104,6 @@ if __name__=="__main__":
     parser.add_argument("--n_epochs", type=int, default=20)
     parser.add_argument("--logdir", type=str, default="checkpoints/")
     parser.add_argument("--lm", type=str, default='distilbert')
-    parser.add_argument("--fp16", dest="fp16", action="store_true")
     hp = parser.parse_args()
 
     train(hp)
